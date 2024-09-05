@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Offer</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand navbar-light bg-light">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Freelance Marketplace</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="index.html"
+                >Available Offers</a
+              >
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link active"
+                aria-current="page"
+                href="create_offer"
+                >Create Offer</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="active_offers">Active Offers</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5">
+      <h1 class="text-center">Create a New Offer</h1>
+
+      <div class="card mt-5">
+        <div class="card-body">
+          <h3>Create Offer</h3>
+          <form id="createOfferForm">
+            <div class="mb-3">
+              <label for="studentNumber" class="form-label"
+                >Student Matric Number</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="studentNumber"
+                placeholder="Enter student number"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="serviceKeyword" class="form-label"
+                >Service Keyword</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="serviceKeyword"
+                placeholder="Enter service keyword"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="price" class="form-label">Price (in ETH)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="price"
+                placeholder="Enter price in ETH"
+              />
+            </div>
+
+            <!-- Image Upload Form -->
+            <div class="mb-3">
+              <label for="studentCard" class="form-label"
+                >Upload Student Card Image</label
+              >
+              <input
+                type="file"
+                class="form-control"
+                id="studentCard"
+                accept="image/*"
+              />
+              <small id="uploadStatus" class="form-text text-muted"
+                >IPFS Hash: <span id="ipfsHash"></span
+              ></small>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="submitOfferButton"
+              disabled
+            >
+              Create Offer
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ipfs-http-client/dist/index.min.js"></script>
+    <script src="static/app.js"></script>
+
+    <script>
+      const projectId = "a4f3abe3fc2a4cf08f134d30c0be6e08";
+      const projectSecret =
+        "1tPNhTz9b7s9a/rmHSPpBDY0dFDbFcte6oz5wcZ0Ev4vMD52r0DevQ";
+      const auth = "Basic " + btoa(projectId + ":" + projectSecret);
+      const ipfs = IpfsHttpClient.create({
+        host: "infura.ipfs.dweb.link",
+        port: 5001,
+        protocol: "http",
+        headers: {
+          authorization: auth,
+        },
+      }); // Initialize IPFS client
+
+      // Handle the image upload to IPFS
+      $("#studentCard").change(async function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        try {
+          const reader = new FileReader();
+          reader.onloadend = async () => {
+            const buffer = new Uint8Array(reader.result); // Convert to Uint8Array
+            const result = await ipfs.add(buffer);
+            $("#ipfsHash").text(result.path);
+            $("#submitOfferButton").prop("disabled", false); // Enable submit button once image is uploaded
+          };
+          reader.readAsArrayBuffer(file);
+        } catch (error) {
+          console.error("IPFS upload failed:", error);
+          $("#uploadStatus").text("Failed to upload image.");
+        }
+      });
+
+      // Handle form submission to create an offer
+      $("#createOfferForm").submit(function (event) {
+        event.preventDefault();
+
+        const studentNumber = $("#studentNumber").val();
+        const ipfsHash = $("#ipfsHash").text();
+        const serviceKeyword = $("#serviceKeyword").val();
+        let price = $("#price").val();
+        price *= 10 ** 18;
+        console.log(price, "price")
+
+        if (!ipfsHash) {
+          alert("Please upload a student card image.");
+          return;
+        }
+
+        // Call the smart contract method to create an offer
+        marketplaceContract.methods
+          .createOffer(studentNumber, ipfsHash, serviceKeyword, price.toString())
+          .send({ from: defaultAccount })
+          .then(function (receipt) {
+            alert("Offer Created!");
+          })
+          .catch(function (error) {
+            console.error(error);
+            alert("Failed to create offer.");
+          });
+      });
+    </script>
+  </body>
+</html>
