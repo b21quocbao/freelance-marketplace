@@ -1,10 +1,11 @@
 // Ensure you have web3.js installed and included in your project
 if (typeof window.ethereum !== 'undefined') {
   ethereum.request({ method: 'eth_requestAccounts' });
-  var web3 = new Web3("https://sepolia.infura.io/v3/a4f3abe3fc2a4cf08f134d30c0be6e08");
 } else {
   alert("Please install MetaMask to use this dApp!");
 }
+
+var web3 = new Web3("https://sepolia.infura.io/v3/a4f3abe3fc2a4cf08f134d30c0be6e08");
 
 const contractAddress = '0x2154e3076be4ccf41b34481425707bf031a1ff34';
 const contractABI = [
